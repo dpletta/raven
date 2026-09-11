@@ -9,11 +9,11 @@ import posixpath
 import re
 import tempfile
 import zipfile
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from types import MappingProxyType
-from typing import Mapping
 from urllib.parse import unquote, urlsplit
 
 from lxml import etree
@@ -33,20 +33,19 @@ CUSTOM_PROPERTIES_REL = (
 CUSTOM_PROPERTIES_CONTENT_TYPE = (
     "application/vnd.openxmlformats-officedocument.custom-properties+xml"
 )
-CUSTOM_PROPERTIES_NS = (
-    "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties"
-)
+CUSTOM_PROPERTIES_NS = "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties"
 VT_NS = "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"
 
 _STRICT_MARKERS = (
     b"http://purl.oclc.org/ooxml/",
     b"application/vnd.ms-word.document.macroenabled",
 )
-_FORBIDDEN_XML_MARKERS = _STRICT_MARKERS + (
+_FORBIDDEN_XML_MARKERS = (
+    *_STRICT_MARKERS,
     b"digital-signature",
     b"vbaproject",
 )
-_UNSAFE_XML = re.compile(br"<!\s*(?:DOCTYPE|ENTITY)\b", re.IGNORECASE)
+_UNSAFE_XML = re.compile(rb"<!\s*(?:DOCTYPE|ENTITY)\b", re.IGNORECASE)
 _MACRO_NAMES = {
     "word/vbaproject.bin",
     "word/vbadata.xml",
@@ -92,9 +91,9 @@ def _normalise_part_name(part_name: str) -> str:
     decoded = unquote(raw)
     path = PurePosixPath(decoded)
     components = decoded.split("/")
-    invalid_component = any(
-        item in {"", ".", ".."} for item in components[:-1]
-    ) or components[-1] in {".", ".."}
+    invalid_component = any(item in {"", ".", ".."} for item in components[:-1]) or components[
+        -1
+    ] in {".", ".."}
     if (
         not raw
         or "\x00" in raw
@@ -240,8 +239,7 @@ class OpcPackage:
                 if len(infos) > settings.max_zip_members:
                     raise _package_error(
                         ErrorCode.RESOURCE_LIMIT,
-                        f"Package has {len(infos)} members; limit is "
-                        f"{settings.max_zip_members}.",
+                        f"Package has {len(infos)} members; limit is {settings.max_zip_members}.",
                     )
                 declared_total = sum(info.file_size for info in infos)
                 if declared_total > settings.max_uncompressed_bytes:
@@ -375,12 +373,8 @@ class OpcPackage:
                 ErrorCode.UNSUPPORTED_DOCUMENT,
                 f"Unsafe active content cannot be added: {name}",
             )
-        if (
-            folded.endswith(".xml")
-            or folded.endswith(".rels")
-            or name == CONTENT_TYPES_PART
-        ):
-            lowered_data = data.casefold()
+        if folded.endswith(".xml") or folded.endswith(".rels") or name == CONTENT_TYPES_PART:
+            lowered_data = data.lower()
             if any(marker in lowered_data for marker in _FORBIDDEN_XML_MARKERS):
                 raise _package_error(
                     ErrorCode.UNSUPPORTED_DOCUMENT,
@@ -555,17 +549,13 @@ class OpcPackage:
                 ErrorCode.UNSUPPORTED_DOCUMENT,
                 "Signature and macro relationships cannot be added.",
             )
-        normalized_source = (
-            _normalise_part_name(source_part) if source_part is not None else None
-        )
+        normalized_source = _normalise_part_name(source_part) if source_part is not None else None
         rels_name = _rels_part_for(source_part)
         if target_mode is not None and target_mode.casefold() == "external":
             target_value = target_part
         else:
             target_name = _normalise_part_name(target_part)
-            source_dir = (
-                "" if normalized_source is None else posixpath.dirname(normalized_source)
-            )
+            source_dir = "" if normalized_source is None else posixpath.dirname(normalized_source)
             target_value = posixpath.relpath(target_name, source_dir or ".")
 
         if self.has_part(rels_name):
@@ -618,9 +608,7 @@ class OpcPackage:
         prop = next((item for item in properties if item.get("name") == name), None)
         if prop is None:
             used = {
-                int(item.get("pid", "1"))
-                for item in properties
-                if item.get("pid", "").isdigit()
+                int(item.get("pid", "1")) for item in properties if item.get("pid", "").isdigit()
             }
             pid = 2
             while pid in used:
@@ -779,12 +767,8 @@ class OpcPackage:
                     ErrorCode.UNSUPPORTED_DOCUMENT,
                     f"Signed packages are not supported: {name}",
                 )
-            if (
-                folded.endswith(".xml")
-                or folded.endswith(".rels")
-                or name == CONTENT_TYPES_PART
-            ):
-                if any(marker in data.casefold() for marker in _STRICT_MARKERS):
+            if folded.endswith(".xml") or folded.endswith(".rels") or name == CONTENT_TYPES_PART:
+                if any(marker in data.lower() for marker in _STRICT_MARKERS):
                     raise _package_error(
                         ErrorCode.UNSUPPORTED_DOCUMENT,
                         "Strict OOXML and macro-enabled content are not supported.",
@@ -850,8 +834,8 @@ __all__ = [
     "CUSTOM_PROPERTIES_CONTENT_TYPE",
     "CUSTOM_PROPERTIES_REL",
     "OFFICE_DOCUMENT_REL",
-    "OpcPackage",
     "RELATIONSHIPS_NS",
+    "OpcPackage",
     "Relationship",
     "resolve_relationship_target",
 ]

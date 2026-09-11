@@ -53,6 +53,7 @@ reportMissingTypeStubs = false
 dev = [
     "hypothesis>=6.168.0",
     "inline-snapshot>=0.35.4",
+    "lxml-stubs>=0.5.1",
     "pyright>=1.1.414",
     "pytest>=9.1.1",
     "pytest-anyio>=0.0.0",

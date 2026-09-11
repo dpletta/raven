@@ -117,9 +117,10 @@ def test_payload_building_preserves_unknown_members_and_canonical_round_trip() -
 
 
 def test_payload_validation_and_fallback_text() -> None:
-    assert fallback_citation_text(
-        [_citation_item(), {"item_key": KEY_B}]
-    ) == f"[Citation: {DEFAULT_ITEM_KEY}; {KEY_B}]"
+    assert (
+        fallback_citation_text([_citation_item(), {"item_key": KEY_B}])
+        == f"[Citation: {DEFAULT_ITEM_KEY}; {KEY_B}]"
+    )
 
     with pytest.raises(RavenError) as empty:
         build_citation_payload([])
@@ -138,10 +139,7 @@ def test_payload_validation_and_fallback_text() -> None:
     "instruction",
     [
         ' ADDIN ZOTERO_ITEM {"citationID":"legacy","citationItems":[{"id":"ABCD2345"}]} ',
-        (
-            ' CSL_CITATION {"citationID":"legacy-csl",'
-            '"citationItems":[{"id":"ABCD2345"}]} '
-        ),
+        (' CSL_CITATION {"citationID":"legacy-csl","citationItems":[{"id":"ABCD2345"}]} '),
     ],
 )
 def test_legacy_citation_instructions_are_accepted(instruction: str) -> None:
@@ -155,10 +153,7 @@ def test_legacy_citation_instructions_are_accepted(instruction: str) -> None:
 def test_legacy_and_current_bibliography_forms_are_accepted() -> None:
     payload = {"uncited": ["A"], "omitted": [], "custom": []}
     current = build_bibliography_instruction(payload)
-    legacy = (
-        ' ADDIN ZOTERO_BIBL {"uncited":["A"],"omitted":[],"custom":[]} '
-        "CSL_BIBLIOGRAPHY "
-    )
+    legacy = ' ADDIN ZOTERO_BIBL {"uncited":["A"],"omitted":[],"custom":[]} CSL_BIBLIOGRAPHY '
 
     assert parse_bibliography_instruction(current) == payload
     assert parse_bibliography_instruction(legacy) == payload
@@ -206,26 +201,21 @@ def test_field_scanner_reports_malformed_boundaries(
 
 def test_field_surgery_replaces_and_removes_only_the_managed_runs() -> None:
     root = etree.fromstring(
-        (
-            '<w:document xmlns:w="'
-            "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-            '"><w:body><w:p><w:r><w:t>Before </w:t></w:r></w:p></w:body></w:document>'
-        ).encode()
+        b'<w:document xmlns:w="'
+        b"http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        b'"><w:body><w:p><w:r><w:t>Before </w:t></w:r></w:p></w:body></w:document>'
     )
     paragraph = root.find(".//w:p", namespaces=NS)
     assert paragraph is not None
     for run in build_complex_field_runs(
-        ' ADDIN ZOTERO_ITEM {"citationID":"field-1",'
-        '"citationItems":[{"id":"ABCD2345"}]} ',
+        ' ADDIN ZOTERO_ITEM {"citationID":"field-1","citationItems":[{"id":"ABCD2345"}]} ',
         "(Old)",
     ):
         paragraph.append(run)
     paragraph.append(
         etree.fromstring(
-            (
-                '<w:r xmlns:w="http://schemas.openxmlformats.org/'
-                'wordprocessingml/2006/main"><w:t> After</w:t></w:r>'
-            ).encode()
+            b'<w:r xmlns:w="http://schemas.openxmlformats.org/'
+            b'wordprocessingml/2006/main"><w:t> After</w:t></w:r>'
         )
     )
     field = parse_complex_fields(root, strict=True)[0]
@@ -238,7 +228,7 @@ def test_field_surgery_replaces_and_removes_only_the_managed_runs() -> None:
 
     remove_complex_field(reparsed, keep_visible=True)
     assert parse_complex_fields(root) == []
-    assert "Before (New) After" == "".join(root.itertext())
+    assert "".join(root.itertext()) == "Before (New) After"
 
 
 def test_insert_complex_field_rejects_anchor_inside_existing_result(
@@ -247,20 +237,14 @@ def test_insert_complex_field_rejects_anchor_inside_existing_result(
 ) -> None:
     package = _open(split_zotero_docx, raven_settings)
     root = package.read_xml("word/document.xml")
-    citation_record = next(
-        record for record in all_paragraphs(package) if "García" in record.text
-    )
-    locator = make_locator(citation_record).model_copy(
-        update={"exact_text": "García"}
-    )
+    citation_record = next(record for record in all_paragraphs(package) if "García" in record.text)
+    locator = make_locator(citation_record).model_copy(update={"exact_text": "García"})
 
     with pytest.raises(RavenError) as error:
         insert_complex_field(
             root,
             locator,
-            build_citation_instruction(
-                build_citation_payload([_citation_item(KEY_B)])
-            ),
+            build_citation_instruction(build_citation_payload([_citation_item(KEY_B)])),
             "(Other, 2025)",
             position="after",
         )
@@ -289,9 +273,7 @@ def test_citation_manager_insert_lists_and_writes_preferences(
     raven_settings: Settings,
 ) -> None:
     package = _open(minimal_docx, raven_settings)
-    locator = make_locator(all_paragraphs(package)[1]).model_copy(
-        update={"exact_text": "beta"}
-    )
+    locator = make_locator(all_paragraphs(package)[1]).model_copy(update={"exact_text": "beta"})
 
     result = CitationManager(package).insert(
         locator,
@@ -340,9 +322,7 @@ def test_citation_manager_update_and_remove_keep_visible_text(
     assert removed["removed"] is True
     assert removed["visible_text"] == "(Updated, 2025)"
     assert CitationManager(package).list_citations()["citations"] == []
-    assert "(Updated, 2025)" in "".join(
-        package.read_xml("word/document.xml").itertext()
-    )
+    assert "(Updated, 2025)" in "".join(package.read_xml("word/document.xml").itertext())
 
 
 def test_long_unicode_preferences_round_trip_and_can_be_rewritten(

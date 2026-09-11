@@ -11,7 +11,8 @@ from urllib.parse import quote
 
 import httpx
 
-from raven_mcp.config import Settings, settings as default_settings
+from raven_mcp.config import Settings
+from raven_mcp.config import settings as default_settings
 from raven_mcp.errors import ErrorCode, RavenError
 from raven_mcp.schemas import ZoteroGetRequest, ZoteroItem, ZoteroSearchRequest
 
@@ -135,9 +136,7 @@ def resolve_search(
         raise _invalid_request("collection and collection_key identify different collections.")
     collection_key = collection_key or collection
     if collection_key is not None and _ITEM_KEY_RE.fullmatch(collection_key) is None:
-        raise _invalid_request(
-            "A Zotero collection key must be 8 uppercase letters or digits."
-        )
+        raise _invalid_request("A Zotero collection key must be 8 uppercase letters or digits.")
 
     typed_library, library_id = _validate_library(library_type, library_id)
     resolved_qmode = qmode or search_mode or "titleCreatorYear"
@@ -279,10 +278,7 @@ def _item_uri(
     if isinstance(raw_library_id, (str, int)) and not isinstance(raw_library_id, bool):
         library_id = str(raw_library_id)
     segment = "users" if library_type == "user" else "groups"
-    return (
-        f"http://zotero.org/{segment}/{quote(library_id, safe='')}/items/"
-        f"{quote(key, safe='')}"
-    )
+    return f"http://zotero.org/{segment}/{quote(library_id, safe='')}/items/{quote(key, safe='')}"
 
 
 def _normalize_item(
@@ -319,11 +315,7 @@ def _normalize_item(
             if isinstance(decoded, Mapping):
                 csl_json = dict(cast(Mapping[str, Any], decoded))
                 break
-            if (
-                isinstance(decoded, list)
-                and len(decoded) == 1
-                and isinstance(decoded[0], Mapping)
-            ):
+            if isinstance(decoded, list) and len(decoded) == 1 and isinstance(decoded[0], Mapping):
                 csl_json = dict(cast(Mapping[str, Any], decoded[0]))
                 break
 
@@ -553,4 +545,3 @@ class LocalZoteroClient:
 
 LocalZoteroAdapter = LocalZoteroClient
 ZoteroLocalClient = LocalZoteroClient
-

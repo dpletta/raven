@@ -32,7 +32,7 @@ from raven_mcp.docx.wordml import (
 from raven_mcp.errors import ErrorCode, RavenError
 from raven_mcp.schemas import DocumentLocator, StoryKind
 from raven_mcp.validation import validate_semantic
-from tests.conftest import DocxFactory, DocxSpec, W_NS
+from tests.conftest import W_NS, DocxFactory, DocxSpec
 
 
 def _open(path: Path, settings: Settings) -> OpcPackage:
@@ -120,9 +120,7 @@ def test_locator_resolves_context_and_occurrence(
     assert paragraph_hash(record.element) == paragraph_hash(record.text)
     second_letter = resolve_locator(
         package,
-        make_locator(record).model_copy(
-            update={"exact_text": "a", "occurrence": 2}
-        ),
+        make_locator(record).model_copy(update={"exact_text": "a", "occurrence": 2}),
     )
     assert (second_letter.start, second_letter.end) == (9, 10)
 
@@ -415,8 +413,7 @@ def test_discover_stories_ignores_missing_and_external_story_targets(
         relationship.set("Id", relationship_id)
         relationship.set(
             "Type",
-            "http://schemas.openxmlformats.org/officeDocument/2006/"
-            "relationships/header",
+            "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header",
         )
         relationship.set("Target", target)
         if mode:

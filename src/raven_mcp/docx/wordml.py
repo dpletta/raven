@@ -83,7 +83,7 @@ _REVISION_TAGS = {
     f"{{{W_NS}}}moveFrom",
     f"{{{W_NS}}}moveTo",
 }
-_WORD_PATTERN = re.compile(r"\b[\w’'-]+\b", re.UNICODE)
+_WORD_PATTERN = re.compile(r"\b[\w\u2019'-]+\b", re.UNICODE)
 
 
 def qn(local_name: str, namespace: str = W_NS) -> str:
@@ -150,9 +150,7 @@ def style_lookup(package: OpcPackage) -> dict[str, str]:
         style_id = style.get(qn("styleId"))
         name = style.find("w:name", namespaces=NS)
         if style_id:
-            styles[style_id] = (
-                name.get(qn("val")) if name is not None else None
-            ) or style_id
+            styles[style_id] = (name.get(qn("val")) if name is not None else None) or style_id
     return styles
 
 
@@ -279,9 +277,7 @@ def _apply_story_protections(
         while ancestor is not None:
             kind = _PROTECTED_CONTAINERS.get(ancestor.tag)
             if kind is not None:
-                record.protected_ranges.append(
-                    ProtectedRange(0, len(record.text), kind)
-                )
+                record.protected_ranges.append(ProtectedRange(0, len(record.text), kind))
             ancestor = ancestor.getparent()
 
         for element in paragraph.iter():
@@ -292,9 +288,7 @@ def _apply_story_protections(
 
             if element.tag == qn("fldChar"):
                 field_type = element.get(qn("fldCharType"))
-                record.protected_ranges.append(
-                    ProtectedRange(start, start, "field-boundary")
-                )
+                record.protected_ranges.append(ProtectedRange(start, start, "field-boundary"))
                 if field_type == "begin":
                     field_stack.append((index, start))
                 elif field_type == "end" and field_stack:
@@ -303,16 +297,12 @@ def _apply_story_protections(
 
             if element.tag == qn("bookmarkStart"):
                 bookmark_id = element.get(qn("id"))
-                record.protected_ranges.append(
-                    ProtectedRange(start, start, "bookmark-boundary")
-                )
+                record.protected_ranges.append(ProtectedRange(start, start, "bookmark-boundary"))
                 if bookmark_id is not None:
                     bookmarks[bookmark_id] = (index, start)
             elif element.tag == qn("bookmarkEnd"):
                 bookmark_id = element.get(qn("id"))
-                record.protected_ranges.append(
-                    ProtectedRange(start, start, "bookmark-boundary")
-                )
+                record.protected_ranges.append(ProtectedRange(start, start, "bookmark-boundary"))
                 if bookmark_id is not None and bookmark_id in bookmarks:
                     _protect_span(
                         records,
@@ -351,11 +341,7 @@ def story_paragraphs(
     root = package.read_xml(story.part_name)
     paragraphs = root.findall(".//w:p", namespaces=NS)
     if story.kind in {StoryKind.FOOTNOTE, StoryKind.ENDNOTE}:
-        note_tag = (
-            qn("footnote")
-            if story.kind == StoryKind.FOOTNOTE
-            else qn("endnote")
-        )
+        note_tag = qn("footnote") if story.kind == StoryKind.FOOTNOTE else qn("endnote")
         filtered: list[etree._Element] = []
         for paragraph in paragraphs:
             note = paragraph.getparent()
@@ -517,8 +503,7 @@ def field_balance_errors(
             elif field_type == "end":
                 if depth == 0:
                     errors.append(
-                        f"{part_name}: unmatched field end in paragraph "
-                        f"{paragraph_index}."
+                        f"{part_name}: unmatched field end in paragraph {paragraph_index}."
                     )
                 else:
                     depth -= 1
@@ -556,9 +541,7 @@ def _note_count(root: etree._Element, note_name: str) -> int:
     for note in root.findall(f".//w:{note_name}", namespaces=NS):
         note_type = note.get(qn("type"))
         note_id = note.get(qn("id"), "")
-        if note_type not in {"separator", "continuationSeparator"} and not note_id.startswith(
-            "-"
-        ):
+        if note_type not in {"separator", "continuationSeparator"} and not note_id.startswith("-"):
             count += 1
     return count
 
@@ -575,9 +558,7 @@ def inspect_document(
     records_by_story = {
         story.part_name: story_paragraphs(package, story, styles) for story in stories
     }
-    records = [
-        record for story in stories for record in records_by_story[story.part_name]
-    ]
+    records = [record for story in stories for record in records_by_story[story.part_name]]
     views = [record.as_view(make_locator(record)) for record in records]
     fields, field_errors = _story_field_data(package)
 
@@ -716,10 +697,7 @@ def resolve_locator(
         story
         for story in discover_stories(package)
         if story.kind == value.story
-        and (
-            value.story_part is None
-            or story.part_name == value.story_part.removeprefix("/")
-        )
+        and (value.story_part is None or story.part_name == value.story_part.removeprefix("/"))
     ]
     if not candidates:
         raise RavenError(
@@ -776,9 +754,7 @@ def resolve_locator(
 
 
 def _assert_editable(record: ParagraphRecord, start: int, end: int) -> None:
-    conflicts = [
-        item.kind for item in record.protected_ranges if item.overlaps(start, end)
-    ]
+    conflicts = [item.kind for item in record.protected_ranges if item.overlaps(start, end)]
     if conflicts:
         kinds = ", ".join(sorted(set(conflicts)))
         raise RavenError(
@@ -879,11 +855,7 @@ def _isolate_runs(
     end: int,
 ) -> list[etree._Element]:
     runs, ranges = _direct_run_ranges(record)
-    selected = [
-        run
-        for run in runs
-        if ranges[run][0] < end and ranges[run][1] > start
-    ]
+    selected = [run for run in runs if ranges[run][0] < end and ranges[run][1] > start]
     if not selected:
         raise RavenError(
             ErrorCode.ANCHOR_NOT_FOUND,
@@ -1008,9 +980,7 @@ def _untracked_replace(
     replacement: str,
 ) -> None:
     affected = [
-        segment
-        for segment in record.segments
-        if segment.start < end and segment.end > start
+        segment for segment in record.segments if segment.start < end and segment.end > start
     ]
     if not affected or any(segment.node.tag != qn("t") for segment in affected):
         raise RavenError(
@@ -1046,9 +1016,7 @@ def _tracked_replace(
     runs = _isolate_runs(record, start, end)
     parent = record.element
     insertion_index = parent.index(runs[0])
-    deleted_runs = [
-        _new_run(_simple_run_text(run), run, deleted=True) for run in runs
-    ]
+    deleted_runs = [_new_run(_simple_run_text(run), run, deleted=True) for run in runs]
     template = runs[0]
     for run in runs:
         parent.remove(run)

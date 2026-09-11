@@ -185,9 +185,7 @@ def register_citation_tools(
             author=author,
             intent=intent,
         )
-        return guarded(
-            lambda: transactions.prepare_bibliography(request).model_dump(mode="json")
-        )
+        return guarded(lambda: transactions.prepare_bibliography(request).model_dump(mode="json"))
 
     @server.tool(
         description=(

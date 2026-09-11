@@ -7,7 +7,8 @@ from typing import Literal, Self, TypeVar
 
 import httpx
 
-from raven_mcp.config import Settings, settings as default_settings
+from raven_mcp.config import Settings
+from raven_mcp.config import settings as default_settings
 from raven_mcp.errors import ErrorCode, RavenError
 from raven_mcp.schemas import ZoteroGetRequest, ZoteroItem, ZoteroSearchRequest
 from raven_mcp.zotero.local import (
@@ -303,4 +304,3 @@ class ZoteroClient:
             )
 
         return await self._run("get_items", get_local, get_web)
-

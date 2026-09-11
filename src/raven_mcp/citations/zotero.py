@@ -53,12 +53,9 @@ VT_NS = "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"
 REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 CONTENT_TYPES_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
 CUSTOM_REL_TYPE = (
-    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
-    "custom-properties"
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties"
 )
-CUSTOM_CONTENT_TYPE = (
-    "application/vnd.openxmlformats-officedocument.custom-properties+xml"
-)
+CUSTOM_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.custom-properties+xml"
 CUSTOM_FMTID = "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}"
 
 _PREF_RE = re.compile(r"^ZOTERO_PREF_(\d+)$")
@@ -236,9 +233,7 @@ def _extended_item(
             result.pop(name, None)
 
     boolean_values = {
-        "suppress-author": values.get(
-            "suppress_author", values.get("suppress-author", False)
-        ),
+        "suppress-author": values.get("suppress_author", values.get("suppress-author", False)),
         "author-only": values.get("author_only", values.get("author-only", False)),
     }
     for name, value in boolean_values.items():
@@ -555,9 +550,7 @@ def _preference_properties(
         expected = list(range(1, len(values) + 1))
         actual = [index for index, _ in values]
         if actual != expected:
-            warnings.append(
-                f"Zotero preference chunks are non-contiguous: {actual!r}."
-            )
+            warnings.append(f"Zotero preference chunks are non-contiguous: {actual!r}.")
     return values, warnings
 
 
@@ -624,10 +617,11 @@ def _inspect_preferences(adapter: _PackageAdapter) -> dict[str, Any]:
         }
     style = _child(root, "style")
     session = _child(root, "session")
-    has_bibliography = (
-        style is not None
-        and style.get("hasBibliography", "0").lower() in {"1", "true", "yes"}
-    )
+    has_bibliography = style is not None and style.get("hasBibliography", "0").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
     if _local_name(root) != "data":
         warnings.append(f"Legacy Zotero preference root {_local_name(root)!r} detected.")
     return {
@@ -671,7 +665,8 @@ def _preference_document(
     style_node.set("id", style)
     style_node.set("locale", locale)
     style_node.set("hasBibliography", "1" if has_bibliography else "0")
-    style_node.setdefault("bibliographyStyleHasBeenSet", "0")
+    if style_node.get("bibliographyStyleHasBeenSet") is None:
+        style_node.set("bibliographyStyleHasBeenSet", "0")
 
     prefs = _child(root, "prefs")
     if prefs is None:
@@ -703,11 +698,7 @@ def _write_preference_properties(
     for prop in list(custom):
         if _PREF_RE.match(prop.get("name", "")):
             custom.remove(prop)
-    used_pids = {
-        int(value)
-        for prop in custom
-        if (value := prop.get("pid", "")).isdigit()
-    }
+    used_pids = {int(value) for prop in custom if (value := prop.get("pid", "")).isdigit()}
     for index, chunk in enumerate(chunk_utf16(preference_xml), start=1):
         prop = etree.SubElement(custom, f"{{{CUSTOM_NS}}}property")
         prop.set("fmtid", CUSTOM_FMTID)
@@ -741,9 +732,7 @@ def _relationship_root(adapter: _PackageAdapter) -> tuple[etree._Element, bool]:
 def _content_types_root(adapter: _PackageAdapter) -> tuple[etree._Element, bool]:
     root = adapter.read_xml(CONTENT_TYPES_PART, required=False)
     if root is None:
-        root = etree.Element(
-            f"{{{CONTENT_TYPES_NS}}}Types", nsmap={None: CONTENT_TYPES_NS}
-        )
+        root = etree.Element(f"{{{CONTENT_TYPES_NS}}}Types", nsmap={None: CONTENT_TYPES_NS})
     for override in root:
         if override.get("PartName", "").lstrip("/") == CUSTOM_PART:
             if override.get("ContentType") != CUSTOM_CONTENT_TYPE:
@@ -767,11 +756,7 @@ def _preference_edits(
     custom = _custom_root(adapter)
     existing, _, warnings = _parse_preference_xml(custom)
     inspected = _inspect_preferences(adapter)
-    effective_session = (
-        session
-        or cast(str | None, inspected.get("session"))
-        or uuid.uuid4().hex
-    )
+    effective_session = session or cast(str | None, inspected.get("session")) or uuid.uuid4().hex
     preferences = _preference_document(
         existing,
         style=style,
@@ -821,9 +806,7 @@ class CitationManager:
             if root is None:
                 continue
             scan = scan_complex_fields(root, part=part, story=story)
-            documents.append(
-                _StoryDocument(story, part, root, scan.fields, scan.warnings)
-            )
+            documents.append(_StoryDocument(story, part, root, scan.fields, scan.warnings))
         return documents
 
     @staticmethod
@@ -869,8 +852,7 @@ class CitationManager:
             if parsed is None:
                 if field.is_zotero_citation or field.is_zotero_bibliography:
                     warnings.append(
-                        f"Unreadable Zotero instruction in {field.part}, field "
-                        f"{field.ordinal}."
+                        f"Unreadable Zotero instruction in {field.part}, field {field.ordinal}."
                     )
                 continue
             base = {
@@ -884,9 +866,7 @@ class CitationManager:
             if parsed.kind == "citation":
                 citation_id = parsed.payload.get("citationID")
                 if citation_id is None:
-                    warnings.append(
-                        f"Zotero citation in {field.part} has no citationID."
-                    )
+                    warnings.append(f"Zotero citation in {field.part} has no citationID.")
                 else:
                     base["citation_id"] = str(citation_id)
                     if str(citation_id) in seen_ids:
@@ -938,9 +918,7 @@ class CitationManager:
             citation_id=citation_id,
             formatted=formatted,
         )
-        visible_text = str(
-            cast(Mapping[str, Any], payload["properties"]).get("plainCitation", "")
-        )
+        visible_text = str(cast(Mapping[str, Any], payload["properties"]).get("plainCitation", ""))
         instruction = build_citation_instruction(payload)
         story, part = resolve_story_part(locator)
         document = next((item for item in documents if item.part == part), None)
@@ -1000,9 +978,7 @@ class CitationManager:
         """Update one citation while retaining unknown Zotero payload properties."""
 
         documents = self._documents()
-        field = find_unique_field(
-            self._all_fields(documents), citation_id, citations_only=True
-        )
+        field = find_unique_field(self._all_fields(documents), citation_id, citations_only=True)
         parsed = parse_zotero_instruction(field.instruction)
         if parsed is None or parsed.kind != "citation":
             raise RavenError(
@@ -1020,9 +996,7 @@ class CitationManager:
                     stage="citation.update",
                 )
             effective_items: Sequence[CitationItemInput | Mapping[str, Any]] = [
-                cast(Mapping[str, Any], value)
-                for value in old_items
-                if isinstance(value, Mapping)
+                cast(Mapping[str, Any], value) for value in old_items if isinstance(value, Mapping)
             ]
         else:
             effective_items = items
@@ -1030,9 +1004,7 @@ class CitationManager:
         if formatted is None and items is None:
             properties = parsed.payload.get("properties")
             retained = (
-                properties.get("formattedCitation")
-                if isinstance(properties, Mapping)
-                else None
+                properties.get("formattedCitation") if isinstance(properties, Mapping) else None
             )
             effective_formatted = str(retained) if retained is not None else field.visible_text
         else:
@@ -1043,9 +1015,7 @@ class CitationManager:
             formatted=effective_formatted,
             existing=parsed.payload,
         )
-        visible_text = str(
-            cast(Mapping[str, Any], payload["properties"]).get("plainCitation", "")
-        )
+        visible_text = str(cast(Mapping[str, Any], payload["properties"]).get("plainCitation", ""))
         replace_complex_field(
             field,
             instruction=build_citation_instruction(payload),
@@ -1065,8 +1035,7 @@ class CitationManager:
                 locale=effective_locale,
                 session=cast(str | None, current.get("session")),
                 has_bibliography=any(
-                    item.is_zotero_bibliography
-                    for item in self._all_fields(documents)
+                    item.is_zotero_bibliography for item in self._all_fields(documents)
                 ),
             )
             edits.update(preference_edits)
@@ -1089,9 +1058,7 @@ class CitationManager:
         """Remove one citation field without tracked-change wrappers."""
 
         documents = self._documents()
-        field = find_unique_field(
-            self._all_fields(documents), citation_id, citations_only=True
-        )
+        field = find_unique_field(self._all_fields(documents), citation_id, citations_only=True)
         document = self._document_for_field(documents, field)
         visible_text = field.visible_text
         remove_complex_field(field, keep_visible=keep_visible)
@@ -1116,9 +1083,7 @@ class CitationManager:
 
         documents = self._documents()
         bibliography_fields = [
-            field
-            for field in self._all_fields(documents)
-            if field.is_zotero_bibliography
+            field for field in self._all_fields(documents) if field.is_zotero_bibliography
         ]
         if len(bibliography_fields) > 1:
             raise RavenError(
@@ -1144,9 +1109,7 @@ class CitationManager:
                 "visible_text": BIBLIOGRAPHY_PLACEHOLDER,
             }
             if locator is not None:
-                warnings.append(
-                    "A bibliography already exists; locator and heading were not used."
-                )
+                warnings.append("A bibliography already exists; locator and heading were not used.")
             created = False
         else:
             if locator is None:
@@ -1221,10 +1184,7 @@ class CitationManager:
             current, style=style, locale=locale
         )
         bibliography = (
-            any(
-                field.is_zotero_bibliography
-                for field in self._all_fields(self._documents())
-            )
+            any(field.is_zotero_bibliography for field in self._all_fields(self._documents()))
             if has_bibliography is None
             else has_bibliography
         )

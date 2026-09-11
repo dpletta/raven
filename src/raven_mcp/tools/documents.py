@@ -16,9 +16,7 @@ from raven_mcp.tools.common import guarded
 from raven_mcp.transactions import TransactionManager
 
 
-def register_document_tools(
-    server: MCPServer[Any], transactions: TransactionManager
-) -> None:
+def register_document_tools(server: MCPServer[Any], transactions: TransactionManager) -> None:
     """Register preservation-first DOCX tools."""
 
     @server.tool(
@@ -54,9 +52,7 @@ def register_document_tools(
                 "limit": limit,
                 "returned": len(page),
                 "total": len(paragraphs),
-                "next_offset": offset + len(page)
-                if offset + len(page) < len(paragraphs)
-                else None,
+                "next_offset": offset + len(page) if offset + len(page) < len(paragraphs) else None,
             },
             "metadata": result["metadata"] if include_metadata else None,
         }
@@ -84,9 +80,7 @@ def register_document_tools(
             intent=intent,
             idempotency_key=idempotency_key,
         )
-        return guarded(
-            lambda: transactions.prepare_changes(request).model_dump(mode="json")
-        )
+        return guarded(lambda: transactions.prepare_changes(request).model_dump(mode="json"))
 
     @server.tool(
         description=(
@@ -109,9 +103,7 @@ def register_document_tools(
         )
         return guarded(lambda: transactions.commit(request).model_dump(mode="json"))
 
-    @server.tool(
-        description="Abort a staged Raven transaction. No document file is changed."
-    )
+    @server.tool(description="Abort a staged Raven transaction. No document file is changed.")
     def document_abort(transaction_id: str) -> dict[str, Any]:
         return transactions.abort(transaction_id)
 
@@ -122,7 +114,5 @@ def register_document_tools(
             "revisions, and Zotero payload/preferences."
         )
     )
-    def document_validate(
-        document_path: str, profile: str = "full"
-    ) -> dict[str, Any]:
+    def document_validate(document_path: str, profile: str = "full") -> dict[str, Any]:
         return guarded(lambda: transactions.validate(document_path, profile))

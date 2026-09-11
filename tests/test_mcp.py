@@ -44,13 +44,9 @@ async def test_server_lists_tools_resources_and_prompts(
         prompts = await client.list_prompts()
 
     assert {tool.name for tool in tools.tools} == EXPECTED_TOOLS
-    inspect_tool = next(
-        tool for tool in tools.tools if tool.name == "document_inspect"
-    )
+    inspect_tool = next(tool for tool in tools.tools if tool.name == "document_inspect")
     assert inspect_tool.input_schema["required"] == ["document_path"]
-    assert {str(resource.uri) for resource in resources.resources} == {
-        "raven://capabilities"
-    }
+    assert {str(resource.uri) for resource in resources.resources} == {"raven://capabilities"}
     assert {prompt.name for prompt in prompts.prompts} == {
         "review_section",
         "citation_audit",

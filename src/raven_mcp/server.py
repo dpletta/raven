@@ -36,9 +36,7 @@ def create_server(runtime_settings: Settings | None = None) -> MCPServer[Any]:
     server: MCPServer[Any] = MCPServer(
         "raven-academic-writing",
         title="Raven Academic Writing MCP",
-        description=(
-            "Safely inspect and edit Word DOCX files and manage native Zotero citations."
-        ),
+        description=("Safely inspect and edit Word DOCX files and manage native Zotero citations."),
         instructions=(
             "Keep documents closed in Word. Inspect first, then prepare changes, review the "
             "semantic preview, and commit to a new output path. Use the returned SHA-256 and "

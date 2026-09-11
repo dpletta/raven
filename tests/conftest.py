@@ -27,28 +27,16 @@ DC_NS = "http://purl.org/dc/elements/1.1/"
 CUSTOM_NS = "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties"
 VT_NS = "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"
 
-DOCUMENT_TYPE = (
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"
-)
-STYLES_TYPE = (
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"
-)
+DOCUMENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"
+STYLES_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"
 CORE_TYPE = "application/vnd.openxmlformats-package.core-properties+xml"
 CUSTOM_TYPE = "application/vnd.openxmlformats-officedocument.custom-properties+xml"
-COMMENTS_TYPE = (
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"
-)
-FOOTNOTES_TYPE = (
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"
-)
-ENDNOTES_TYPE = (
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml"
-)
+COMMENTS_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"
+FOOTNOTES_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"
+ENDNOTES_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml"
 
 OFFICE_DOCUMENT_REL = f"{OFFICE_REL_NS}/officeDocument"
-CORE_REL = (
-    "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties"
-)
+CORE_REL = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties"
 CUSTOM_REL = f"{OFFICE_REL_NS}/custom-properties"
 STYLES_REL = f"{OFFICE_REL_NS}/styles"
 COMMENTS_REL = f"{OFFICE_REL_NS}/comments"
@@ -236,9 +224,7 @@ class DocxFactory:
         parts: dict[str, bytes] = {
             "word/document.xml": _xml_bytes(document),
             "word/styles.xml": _xml_bytes(self._styles()),
-            "word/_rels/document.xml.rels": _xml_bytes(
-                _relationships(document_relationships)
-            ),
+            "word/_rels/document.xml.rels": _xml_bytes(_relationships(document_relationships)),
             "docProps/core.xml": _xml_bytes(self._core(spec.title)),
         }
 
@@ -267,9 +253,7 @@ class DocxFactory:
         if spec.unicode_long_prefs:
             parts["docProps/custom.xml"] = _xml_bytes(self._custom_properties())
             overrides.append(("/docProps/custom.xml", CUSTOM_TYPE))
-            root_relationships.append(
-                ("rId3", CUSTOM_REL, "docProps/custom.xml", None)
-            )
+            root_relationships.append(("rId3", CUSTOM_REL, "docProps/custom.xml", None))
         if spec.macro:
             parts["word/vbaProject.bin"] = b"not-a-real-macro"
         if spec.drawing:
@@ -359,9 +343,7 @@ class DocxFactory:
             deleted_run = etree.SubElement(deletion, qn(W_NS, "r"))
             deleted_text = etree.SubElement(deleted_run, qn(W_NS, "delText"))
             deleted_text.text = " deleted"
-            relationships.append(
-                (f"rId{next_id}", COMMENTS_REL, "comments.xml", None)
-            )
+            relationships.append((f"rId{next_id}", COMMENTS_REL, "comments.xml", None))
             next_id += 1
 
         if spec.split_zotero:
@@ -453,9 +435,7 @@ class DocxFactory:
             geometry = etree.SubElement(shape, qn(A_NS, "prstGeom"))
             geometry.set("prst", "rect")
             etree.SubElement(geometry, qn(A_NS, "avLst"))
-            relationships.append(
-                (f"rId{next_id}", IMAGE_REL, "media/pixel.png", None)
-            )
+            relationships.append((f"rId{next_id}", IMAGE_REL, "media/pixel.png", None))
             next_id += 1
 
         if spec.external_relationship:

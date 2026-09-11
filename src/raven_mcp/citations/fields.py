@@ -225,9 +225,7 @@ def scan_complex_fields(
                 stack.append(opened)
             elif kind == "separate":
                 if not stack:
-                    result.warnings.append(
-                        f"Ignored unmatched field separator in {part}."
-                    )
+                    result.warnings.append(f"Ignored unmatched field separator in {part}.")
                 elif stack[-1].separator is not None:
                     result.warnings.append(
                         f"Ignored duplicate field separator in {part}, field {stack[-1].ordinal}."
@@ -279,9 +277,7 @@ def scan_complex_fields(
                     opened.result_nodes.append(element)
 
     for opened in stack:
-        result.warnings.append(
-            f"Ignored unclosed field in {part}, field {opened.ordinal}."
-        )
+        result.warnings.append(f"Ignored unclosed field in {part}, field {opened.ordinal}.")
     result.fields.sort(key=lambda item: item.ordinal)
     return result
 
@@ -708,9 +704,7 @@ def insert_complex_field(
         overlaps = anchor_start < field_end and anchor_end > field_start
         exact_field = anchor_start == field_start and anchor_end == field_end
         if overlaps and not exact_field:
-            raise _protected_error(
-                locator, "The text anchor overlaps a managed field result."
-            )
+            raise _protected_error(locator, "The text anchor overlaps a managed field result.")
         if field_start < offset < field_end:
             raise _protected_error(locator, "The insertion point is inside a managed field.")
         if offset == field_start:

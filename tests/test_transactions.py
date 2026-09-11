@@ -26,9 +26,7 @@ from tests.conftest import DocxFactory, DocxSpec
 
 def _locator(manager: TransactionManager, path: Path, index: int = 1) -> DocumentLocator:
     inspection = manager.inspect(str(path))
-    return DocumentLocator.model_validate(
-        inspection["paragraphs"][index]["locator"]
-    )
+    return DocumentLocator.model_validate(inspection["paragraphs"][index]["locator"])
 
 
 def _prepare_insert(
@@ -265,9 +263,7 @@ def test_failed_multi_operation_prepare_leaves_source_unchanged(
 ) -> None:
     manager = TransactionManager(raven_settings)
     original = minimal_docx.read_bytes()
-    locator = _locator(manager, minimal_docx).model_copy(
-        update={"paragraph_hash": None}
-    )
+    locator = _locator(manager, minimal_docx).model_copy(update={"paragraph_hash": None})
     request = PrepareChangesRequest(
         document_path=str(minimal_docx),
         expected_sha256=sha256_file(minimal_docx),

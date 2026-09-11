@@ -100,8 +100,7 @@ def validate_package(package: OpcPackage) -> dict[str, Any]:
             and name not in content_types
         ]
         errors.extend(
-            f"No content type is declared for package part {name}."
-            for name in missing_types
+            f"No content type is declared for package part {name}." for name in missing_types
         )
     except RavenError as exc:
         errors.append(f"Content type validation failed: {exc}")
@@ -210,13 +209,9 @@ def validate_semantic(package: OpcPackage) -> dict[str, Any]:
                 if value is None:
                     errors.append(f"{story.part_name}: revision has no w:id.")
                 if element.get(qn("author")) is None:
-                    warnings.append(
-                        f"{story.part_name}: revision {value or '?'} has no author."
-                    )
+                    warnings.append(f"{story.part_name}: revision {value or '?'} has no author.")
 
-    missing_comment_bodies = (
-        comment_starts | comment_ends | comment_references
-    ) - comments
+    missing_comment_bodies = (comment_starts | comment_ends | comment_references) - comments
     for comment_id in sorted(missing_comment_bodies):
         errors.append(f"Comment marker {comment_id} has no comment body.")
     for comment_id in sorted(comments - comment_references):
@@ -275,9 +270,7 @@ def _validate_citation_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(f"citationItems[{index}] is not an object")
             continue
         if "id" not in item and not item.get("uris") and not item.get("itemData"):
-            errors.append(
-                f"citationItems[{index}] has no id, uris, or embedded itemData"
-            )
+            errors.append(f"citationItems[{index}] has no id, uris, or embedded itemData")
         if "uris" in item and not isinstance(item["uris"], list):
             errors.append(f"citationItems[{index}].uris is not an array")
         if "itemData" in item and not isinstance(item["itemData"], dict):
@@ -326,31 +319,21 @@ def validate_zotero(package: OpcPackage) -> dict[str, Any]:
                 citation_count += 1
                 payload, issue = _json_payload(instruction)
                 if issue is not None or payload is None:
-                    errors.append(
-                        f"{story.part_name} citation field {citation_count} {issue}."
-                    )
+                    errors.append(f"{story.part_name} citation field {citation_count} {issue}.")
                     continue
                 for detail in _validate_citation_payload(payload):
-                    errors.append(
-                        f"{story.part_name} citation field {citation_count}: {detail}."
-                    )
+                    errors.append(f"{story.part_name} citation field {citation_count}: {detail}.")
             elif "ZOTERO_BIBL" in instruction:
                 bibliography_count += 1
                 if "{" in instruction:
-                    _, issue = _json_payload(
-                        instruction, allowed_trailing=("CSL_BIBLIOGRAPHY",)
-                    )
+                    _, issue = _json_payload(instruction, allowed_trailing=("CSL_BIBLIOGRAPHY",))
                     if issue is not None:
-                        errors.append(
-                            f"{story.part_name} bibliography field {issue}."
-                        )
+                        errors.append(f"{story.part_name} bibliography field {issue}.")
 
     if package.has_part("docProps/custom.xml"):
         try:
             custom = package.read_xml("docProps/custom.xml")
-            for prop in custom.findall(
-                f"{{{CUSTOM_PROPERTIES_NS}}}property"
-            ):
+            for prop in custom.findall(f"{{{CUSTOM_PROPERTIES_NS}}}property"):
                 match = _PREFERENCE_PATTERN.fullmatch(prop.get("name", ""))
                 if match is None:
                     continue
@@ -365,9 +348,7 @@ def validate_zotero(package: OpcPackage) -> dict[str, Any]:
         indexes = sorted(preference_chunks)
         expected = list(range(1, indexes[-1] + 1))
         if indexes != expected:
-            errors.append(
-                "Zotero preference chunks are not contiguous from ZOTERO_PREF_1."
-            )
+            errors.append("Zotero preference chunks are not contiguous from ZOTERO_PREF_1.")
         combined = "".join(preference_chunks[index] for index in indexes)
         try:
             preference_root = etree.fromstring(
@@ -384,11 +365,7 @@ def validate_zotero(package: OpcPackage) -> dict[str, Any]:
         else:
             if etree.QName(preference_root).localname not in {"data", "document-data"}:
                 errors.append("Zotero preference root must be data.")
-            styles = [
-                child
-                for child in preference_root
-                if etree.QName(child).localname == "style"
-            ]
+            styles = [child for child in preference_root if etree.QName(child).localname == "style"]
             if len(styles) != 1 or not styles[0].get("id"):
                 errors.append("Zotero preferences must contain one style with an id.")
             field_types = [
@@ -396,8 +373,7 @@ def validate_zotero(package: OpcPackage) -> dict[str, Any]:
                 for child in preference_root
                 if etree.QName(child).localname == "prefs"
                 for item in child
-                if etree.QName(item).localname == "pref"
-                and item.get("name") == "fieldType"
+                if etree.QName(item).localname == "pref" and item.get("name") == "fieldType"
             ]
             if field_types != ["Field"]:
                 errors.append("Zotero preference fieldType must be Field.")
@@ -427,14 +403,10 @@ def validate_document(package: OpcPackage) -> dict[str, Any]:
         "zotero": zotero_report,
     }
     errors = [
-        f"{name}: {message}"
-        for name, report in reports.items()
-        for message in report["errors"]
+        f"{name}: {message}" for name, report in reports.items() for message in report["errors"]
     ]
     warnings = [
-        f"{name}: {message}"
-        for name, report in reports.items()
-        for message in report["warnings"]
+        f"{name}: {message}" for name, report in reports.items() for message in report["warnings"]
     ]
     return {
         "valid": not errors,

@@ -14,8 +14,8 @@ from lxml import etree
 
 from raven_mcp.config import Settings
 from raven_mcp.docx.opc import (
-    CUSTOM_PROPERTIES_CONTENT_TYPE,
     CONTENT_TYPES_NS,
+    CUSTOM_PROPERTIES_CONTENT_TYPE,
     OpcPackage,
     resolve_relationship_target,
 )
@@ -66,9 +66,7 @@ def test_clone_is_independent_and_serialization_preserves_member_metadata(
         assert untouched.date_time == original_info.date_time
         assert untouched.compress_type == original_info.compress_type
         assert untouched.external_attr == original_info.external_attr
-        assert archive.read("docProps/core.xml") == package.read_bytes(
-            "docProps/core.xml"
-        )
+        assert archive.read("docProps/core.xml") == package.read_bytes("docProps/core.xml")
 
 
 def test_add_remove_parts_content_types_and_relationships(
@@ -77,8 +75,7 @@ def test_add_remove_parts_content_types_and_relationships(
 ) -> None:
     package = _open(minimal_docx, raven_settings)
     custom = etree.Element(
-        "{http://schemas.openxmlformats.org/officeDocument/2006/"
-        "custom-properties}Properties"
+        "{http://schemas.openxmlformats.org/officeDocument/2006/custom-properties}Properties"
     )
     package.set_xml("docProps/custom.xml", custom)
     package.set_content_type_override(
@@ -94,9 +91,7 @@ def test_add_remove_parts_content_types_and_relationships(
     assert relationship_id == "rId3"
     assert package.content_type_for("docProps/custom.xml") == CUSTOM_PROPERTIES_CONTENT_TYPE
     relationship = next(
-        item
-        for item in package.relationships(None)
-        if item.relationship_type == CUSTOM_REL
+        item for item in package.relationships(None) if item.relationship_type == CUSTOM_REL
     )
     assert package.relationship_target(relationship) == "docProps/custom.xml"
 
@@ -119,10 +114,7 @@ def test_custom_properties_support_standard_scalar_types(
     package.set_custom_property("Count", 9)
 
     custom = package.read_xml("docProps/custom.xml")
-    values = {
-        node.get("name"): "".join(node.itertext())
-        for node in custom
-    }
+    values = {node.get("name"): "".join(node.itertext()) for node in custom}
     assert values == {
         "Text": "café",
         "Count": "9",

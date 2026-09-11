@@ -34,9 +34,7 @@ class Settings:
         roots = _split_paths(roots_value) if roots_value else (Path.cwd().resolve(),)
         return cls(
             allowed_roots=roots,
-            max_document_bytes=int(
-                os.environ.get("RAVEN_MAX_DOCUMENT_BYTES", 100 * 1024 * 1024)
-            ),
+            max_document_bytes=int(os.environ.get("RAVEN_MAX_DOCUMENT_BYTES", 100 * 1024 * 1024)),
             max_uncompressed_bytes=int(
                 os.environ.get("RAVEN_MAX_UNCOMPRESSED_BYTES", 512 * 1024 * 1024)
             ),
@@ -46,9 +44,9 @@ class Settings:
             zotero_local_url=os.environ.get(
                 "RAVEN_ZOTERO_LOCAL_URL", "http://127.0.0.1:23119/api"
             ).rstrip("/"),
-            zotero_web_url=os.environ.get(
-                "RAVEN_ZOTERO_WEB_URL", "https://api.zotero.org"
-            ).rstrip("/"),
+            zotero_web_url=os.environ.get("RAVEN_ZOTERO_WEB_URL", "https://api.zotero.org").rstrip(
+                "/"
+            ),
             zotero_api_key=os.environ.get("ZOTERO_API_KEY"),
             zotero_user_id=os.environ.get("ZOTERO_USER_ID"),
             default_csl_style=os.environ.get(
@@ -69,7 +67,9 @@ class Settings:
                 remediation="Provide an existing path inside an allowed root.",
             ) from exc
 
-        if not any(resolved == root or resolved.is_relative_to(root) for root in self.allowed_roots):
+        if not any(
+            resolved == root or resolved.is_relative_to(root) for root in self.allowed_roots
+        ):
             raise RavenError(
                 ErrorCode.PATH_NOT_ALLOWED,
                 f"Path is outside configured roots: {resolved}",

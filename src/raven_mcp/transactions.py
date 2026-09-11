@@ -11,7 +11,7 @@ import shutil
 import tempfile
 import threading
 import uuid
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -20,7 +20,8 @@ from typing import Any
 import portalocker
 
 from raven_mcp.citations.zotero import CitationManager
-from raven_mcp.config import Settings, settings as default_settings
+from raven_mcp.config import Settings
+from raven_mcp.config import settings as default_settings
 from raven_mcp.docx.opc import OpcPackage
 from raven_mcp.docx.wordml import (
     add_comment,
@@ -59,11 +60,11 @@ from raven_mcp.validation import (
 Mutation = Callable[[OpcPackage], tuple[dict[str, Any], list[dict[str, Any]], list[str]]]
 
 _PLAIN_AUTHOR_YEAR = re.compile(
-    r"\((?:[A-Z][\w'’-]+(?:\s+et\s+al\.)?,?\s+\d{4}[a-z]?"
+    r"\((?:[A-Z][\w'\u2019-]+(?:\s+et\s+al\.)?,?\s+\d{4}[a-z]?"
     r"(?:;\s*)?)+\)"
 )
-_PLAIN_NARRATIVE = re.compile(r"\b[A-Z][\w'’-]+(?:\s+et\s+al\.)?\s+\(\d{4}[a-z]?\)")
-_PLAIN_NUMERIC = re.compile(r"\[(?:\d+(?:\s*[-–]\s*\d+)?)(?:\s*,\s*\d+)*\]")
+_PLAIN_NARRATIVE = re.compile(r"\b[A-Z][\w'\u2019-]+(?:\s+et\s+al\.)?\s+\(\d{4}[a-z]?\)")
+_PLAIN_NUMERIC = re.compile(r"\[(?:\d+(?:\s*[-\u2013]\s*\d+)?)(?:\s*,\s*\d+)*\]")
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -273,9 +274,7 @@ class TransactionManager:
                 if existing is not None:
                     return existing.preview()
 
-        source_path, source_sha, package = self.open_document(
-            document_path, expected_sha256
-        )
+        source_path, source_sha, package = self.open_document(document_path, expected_sha256)
         staged = package.clone()
         result, semantic_diff, warnings = mutation(staged)
         operations_with_result = [
@@ -382,16 +381,12 @@ class TransactionManager:
             expected_sha256=request.expected_sha256,
             author=request.author,
             intent=request.intent,
-            operations=[
-                operation.model_dump(mode="json") for operation in request.operations
-            ],
+            operations=[operation.model_dump(mode="json") for operation in request.operations],
             mutation=mutate,
             idempotency_key=request.idempotency_key,
         )
 
-    def prepare_citation_insert(
-        self, request: CitationInsertRequest
-    ) -> TransactionPreview:
+    def prepare_citation_insert(self, request: CitationInsertRequest) -> TransactionPreview:
         def mutate(package: OpcPackage) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
             result = CitationManager(package).insert(
                 request.locator,
@@ -416,17 +411,17 @@ class TransactionManager:
             mutation=mutate,
         )
 
-    def prepare_citation_update(
-        self, request: CitationUpdateRequest
-    ) -> TransactionPreview:
+    def prepare_citation_update(self, request: CitationUpdateRequest) -> TransactionPreview:
         def mutate(package: OpcPackage) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
             result = CitationManager(package).update(
                 request.citation_id,
                 request.items,
                 request.formatted_citation,
             )
-            return result, [{"type": "update_citation", "citation_id": request.citation_id}], list(
-                result["warnings"]
+            return (
+                result,
+                [{"type": "update_citation", "citation_id": request.citation_id}],
+                list(result["warnings"]),
             )
 
         return self._prepare(
@@ -438,19 +433,15 @@ class TransactionManager:
             mutation=mutate,
         )
 
-    def prepare_citation_remove(
-        self, request: CitationRemoveRequest
-    ) -> TransactionPreview:
+    def prepare_citation_remove(self, request: CitationRemoveRequest) -> TransactionPreview:
         def mutate(package: OpcPackage) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
-            result = CitationManager(package).remove(
-                request.citation_id, request.keep_visible_text
+            result = CitationManager(package).remove(request.citation_id, request.keep_visible_text)
+            warning = "Citation field removal is not represented as a tracked deletion."
+            return (
+                result,
+                [{"type": "remove_citation", "citation_id": request.citation_id}],
+                [warning],
             )
-            warning = (
-                "Citation field removal is not represented as a tracked deletion."
-            )
-            return result, [{"type": "remove_citation", "citation_id": request.citation_id}], [
-                warning
-            ]
 
         return self._prepare(
             document_path=request.document_path,
@@ -461,9 +452,7 @@ class TransactionManager:
             mutation=mutate,
         )
 
-    def prepare_bibliography(
-        self, request: BibliographySyncRequest
-    ) -> TransactionPreview:
+    def prepare_bibliography(self, request: BibliographySyncRequest) -> TransactionPreview:
         def mutate(package: OpcPackage) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
             result = CitationManager(package).sync_bibliography(
                 request.locator,
@@ -471,8 +460,10 @@ class TransactionManager:
                 request.style,
                 request.locale,
             )
-            return result, [{"type": "sync_bibliography", "created": result["created"]}], list(
-                result["warnings"]
+            return (
+                result,
+                [{"type": "sync_bibliography", "created": result["created"]}],
+                list(result["warnings"]),
             )
 
         return self._prepare(
@@ -506,9 +497,7 @@ class TransactionManager:
 
     def commit(self, request: CommitRequest) -> CommitResult:
         transaction = self._get(request.transaction_id)
-        if not secrets.compare_digest(
-            transaction.confirmation_token, request.confirmation_token
-        ):
+        if not secrets.compare_digest(transaction.confirmation_token, request.confirmation_token):
             raise RavenError(
                 ErrorCode.INVALID_REQUEST,
                 "The transaction confirmation token is invalid.",
