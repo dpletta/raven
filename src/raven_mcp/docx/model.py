@@ -58,8 +58,8 @@ class ParagraphRecord:
     element: etree._Element
     text: str
     style: str | None = None
-    protected_ranges: list[ProtectedRange] = field(default_factory=list)
-    segments: list[TextSegment] = field(default_factory=list)
+    protected_ranges: list[ProtectedRange] = field(default_factory=lambda: list[ProtectedRange]())
+    segments: list[TextSegment] = field(default_factory=lambda: list[TextSegment]())
 
     def as_view(self, locator: DocumentLocator) -> ParagraphView:
         return ParagraphView(

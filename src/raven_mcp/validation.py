@@ -8,7 +8,7 @@ import posixpath
 import re
 import zipfile
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, cast
 
 from lxml import etree
 
@@ -248,7 +248,7 @@ def _json_payload(
         return None, "has no JSON object"
     decoder = json.JSONDecoder()
     try:
-        value, end = decoder.raw_decode(instruction[start:])
+        value, end = cast(tuple[object, int], decoder.raw_decode(instruction[start:]))
     except json.JSONDecodeError as exc:
         return None, f"contains malformed JSON: {exc.msg}"
     trailing = instruction[start + end :].strip()
@@ -256,24 +256,30 @@ def _json_payload(
         return None, "has trailing content after its JSON object"
     if not isinstance(value, dict):
         return None, "JSON payload is not an object"
-    return value, None
+    return cast(dict[str, Any], value), None
 
 
 def _validate_citation_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    citation_items = payload.get("citationItems")
-    if not isinstance(citation_items, list) or not citation_items:
+    citation_items_value = payload.get("citationItems")
+    if not isinstance(citation_items_value, list) or not citation_items_value:
         errors.append("citationItems must be a non-empty array")
         return errors
+    citation_items = cast(list[object], citation_items_value)
     for index, item in enumerate(citation_items):
         if not isinstance(item, dict):
             errors.append(f"citationItems[{index}] is not an object")
             continue
-        if "id" not in item and not item.get("uris") and not item.get("itemData"):
+        item_payload = cast(dict[str, Any], item)
+        if (
+            "id" not in item_payload
+            and not item_payload.get("uris")
+            and not item_payload.get("itemData")
+        ):
             errors.append(f"citationItems[{index}] has no id, uris, or embedded itemData")
-        if "uris" in item and not isinstance(item["uris"], list):
+        if "uris" in item_payload and not isinstance(item_payload["uris"], list):
             errors.append(f"citationItems[{index}].uris is not an array")
-        if "itemData" in item and not isinstance(item["itemData"], dict):
+        if "itemData" in item_payload and not isinstance(item_payload["itemData"], dict):
             errors.append(f"citationItems[{index}].itemData is not an object")
     properties = payload.get("properties")
     if properties is not None and not isinstance(properties, dict):
@@ -429,7 +435,7 @@ def raise_for_failed_validation(report: Mapping[str, Any]) -> None:
         return
     errors = report.get("errors")
     if isinstance(errors, list):
-        detail = "; ".join(str(item) for item in errors[:5])
+        detail = "; ".join(str(item) for item in cast(list[object], errors)[:5])
     else:
         detail = "Validation failed."
     raise RavenError(

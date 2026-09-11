@@ -442,7 +442,11 @@ class OpcPackage:
             if explicit is not None:
                 result[name] = explicit
                 continue
-            extension = PurePosixPath(name).suffix.removeprefix(".").casefold()
+            extension = (
+                "rels"
+                if name.endswith(".rels")
+                else PurePosixPath(name).suffix.removeprefix(".").casefold()
+            )
             if extension in defaults:
                 result[name] = defaults[extension]
         return MappingProxyType(result)

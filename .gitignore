@@ -4,6 +4,9 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .pyright/
+.artifacts/
 build/
 dist/
+bin/
+obj/
 *.egg-info/

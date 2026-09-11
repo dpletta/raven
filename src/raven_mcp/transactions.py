@@ -46,7 +46,6 @@ from raven_mcp.schemas import (
     InsertText,
     PrepareChangesRequest,
     ReplaceText,
-    SetAltText,
     TransactionPreview,
 )
 from raven_mcp.validation import (
@@ -356,7 +355,7 @@ class TransactionManager:
                         initials=operation.initials,
                     )
                     detail = {"anchor": operation.text, "comment_id": comment_id}
-                elif isinstance(operation, SetAltText):
+                else:
                     set_alt_text(
                         package,
                         operation.locator,
@@ -367,12 +366,6 @@ class TransactionManager:
                         "title": operation.title,
                         "description": operation.description,
                     }
-                else:  # pragma: no cover - discriminated schema is exhaustive
-                    raise RavenError(
-                        ErrorCode.INVALID_REQUEST,
-                        "Unsupported document operation.",
-                        stage="transaction.prepare",
-                    )
                 diffs.append({"operation": index, "type": operation.type, **detail})
             return {"applied": len(diffs)}, diffs, []
 

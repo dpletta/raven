@@ -46,16 +46,18 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 [tool.pyright]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
-include = ["src", "tests"]
+include = ["src", "tests", "scripts"]
 reportMissingTypeStubs = false
+# lxml exposes _Element and _ElementTree as its canonical public annotation types.
+reportPrivateUsage = false
 
 [dependency-groups]
 dev = [
     "hypothesis>=6.168.0",
     "inline-snapshot>=0.35.4",
-    "lxml-stubs>=0.5.1",
     "pyright>=1.1.414",
     "pytest>=9.1.1",
     "pytest-anyio>=0.0.0",
     "ruff>=0.16.7",
+    "types-lxml>=2026.2.16",
 ]

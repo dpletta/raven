@@ -309,6 +309,16 @@ class DocxFactory:
 
         if spec.table:
             table = etree.SubElement(body, qn(W_NS, "tbl"))
+            table_properties = etree.SubElement(table, qn(W_NS, "tblPr"))
+            table_width = etree.SubElement(table_properties, qn(W_NS, "tblW"))
+            table_width.set(qn(W_NS, "w"), "0")
+            table_width.set(qn(W_NS, "type"), "auto")
+            grid = etree.SubElement(table, qn(W_NS, "tblGrid"))
+            for _ in range(2):
+                etree.SubElement(grid, qn(W_NS, "gridCol")).set(
+                    qn(W_NS, "w"),
+                    "4320",
+                )
             row = etree.SubElement(table, qn(W_NS, "tr"))
             for value in ("Cell one", "Cell two"):
                 cell = etree.SubElement(row, qn(W_NS, "tc"))

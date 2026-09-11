@@ -210,7 +210,7 @@ def _extended_item(
     if uri is None and "uris" in values:
         raw_uris = values.get("uris")
         result["uris"] = (
-            [str(value) for value in raw_uris]
+            [str(value) for value in cast(Sequence[object], raw_uris)]
             if isinstance(raw_uris, Sequence) and not isinstance(raw_uris, (str, bytes))
             else []
         )
@@ -218,7 +218,9 @@ def _extended_item(
         result["uris"] = [str(uri)] if uri else []
 
     item_data = values.get("csl_json", values.get("itemData"))
-    result["itemData"] = copy.deepcopy(item_data) if isinstance(item_data, Mapping) else {}
+    result["itemData"] = (
+        copy.deepcopy(cast(Mapping[str, Any], item_data)) if isinstance(item_data, Mapping) else {}
+    )
 
     optional_strings = {
         "locator": values.get("locator"),
@@ -263,11 +265,13 @@ def build_citation_payload(
     existing_items = payload.get("citationItems")
     previous_by_id: dict[str, Mapping[str, Any]] = {}
     if isinstance(existing_items, list):
-        previous_by_id = {
-            str(value.get("id")): value
-            for value in existing_items
-            if isinstance(value, Mapping) and value.get("id") is not None
-        }
+        for candidate in cast(list[object], existing_items):
+            if not isinstance(candidate, Mapping):
+                continue
+            value = cast(Mapping[str, Any], candidate)
+            item_id = value.get("id")
+            if item_id is not None:
+                previous_by_id[str(item_id)] = value
     new_items: list[dict[str, Any]] = []
     for item in items:
         values = _item_values(item)
@@ -278,8 +282,12 @@ def build_citation_payload(
     payload["citationID"] = citation_id or str(payload.get("citationID") or uuid.uuid4().hex)
     payload["citationItems"] = new_items
     payload["schema"] = CSL_CITATION_SCHEMA
-    properties = payload.get("properties")
-    properties = copy.deepcopy(dict(properties)) if isinstance(properties, Mapping) else {}
+    raw_properties = payload.get("properties")
+    properties: dict[str, Any] = (
+        copy.deepcopy(dict(cast(Mapping[str, Any], raw_properties)))
+        if isinstance(raw_properties, Mapping)
+        else {}
+    )
     rendered = formatted if formatted is not None else fallback_citation_text(items)
     properties["formattedCitation"] = rendered
     properties["plainCitation"] = _plain_formatted(rendered)
@@ -392,12 +400,20 @@ class _PackageAdapter:
     @staticmethod
     def _root(value: Any) -> etree._Element:
         if isinstance(value, etree._ElementTree):
-            return value.getroot()
+            return cast(etree._Element, value.getroot())
         if isinstance(value, etree._Element):
             return value
         if isinstance(value, (bytes, bytearray, memoryview, str)):
+            if isinstance(value, str):
+                data = value.encode()
+            elif isinstance(value, bytes):
+                data = value
+            elif isinstance(value, bytearray):
+                data = bytes(value)
+            else:
+                data = value.tobytes()
             return etree.fromstring(
-                bytes(value) if not isinstance(value, str) else value.encode(),
+                data,
                 parser=etree.XMLParser(resolve_entities=False, no_network=True),
             )
         getroot = getattr(value, "getroot", None)
@@ -423,7 +439,7 @@ class _PackageAdapter:
                     raise
                 if isinstance(value, str):
                     return value.encode()
-                return bytes(value)
+                return bytes(cast(Any, value))
             return None
         xml_reader = getattr(self.package, "read_xml", None)
         if callable(xml_reader):
@@ -996,15 +1012,19 @@ class CitationManager:
                     stage="citation.update",
                 )
             effective_items: Sequence[CitationItemInput | Mapping[str, Any]] = [
-                cast(Mapping[str, Any], value) for value in old_items if isinstance(value, Mapping)
+                cast(Mapping[str, Any], value)
+                for value in cast(list[object], old_items)
+                if isinstance(value, Mapping)
             ]
         else:
             effective_items = items
 
         if formatted is None and items is None:
             properties = parsed.payload.get("properties")
-            retained = (
-                properties.get("formattedCitation") if isinstance(properties, Mapping) else None
+            retained: object | None = (
+                cast(Mapping[str, object], properties).get("formattedCitation")
+                if isinstance(properties, Mapping)
+                else None
             )
             effective_formatted = str(retained) if retained is not None else field.visible_text
         else:

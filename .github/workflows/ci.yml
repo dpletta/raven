@@ -35,8 +35,24 @@ jobs:
       - name: Pytest
         run: uv run pytest
 
-      # Microsoft does not distribute a versioned, cross-platform Open XML SDK
-      # validator CLI. Installing an unpinned third-party wrapper would make CI
-      # non-reproducible. The generated fixtures are instead checked by Raven's
-      # package/semantic validators plus explicit ZIP, XML, relationship, and
-      # content-type tests. Add an SDK validator here if an official CLI ships.
+      - name: Install .NET 8
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Generate scrubbed Open XML fixtures
+        run: PYTHONPATH=. uv run python scripts/generate_openxml_fixtures.py .artifacts/openxml-fixtures
+
+      - name: Restore pinned Open XML SDK
+        run: >-
+          dotnet restore
+          tools/openxml-validator/Raven.OpenXmlValidator.csproj
+          --locked-mode
+
+      - name: Microsoft Open XML SDK validation
+        run: >-
+          dotnet run
+          --project tools/openxml-validator/Raven.OpenXmlValidator.csproj
+          --configuration Release
+          --no-restore
+          -- .artifacts/openxml-fixtures

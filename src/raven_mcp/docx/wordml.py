@@ -11,7 +11,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from lxml import etree
 from pydantic import ValidationError
@@ -275,14 +275,14 @@ def _apply_story_protections(
 
         ancestor = paragraph.getparent()
         while ancestor is not None:
-            kind = _PROTECTED_CONTAINERS.get(ancestor.tag)
+            kind = _PROTECTED_CONTAINERS.get(str(ancestor.tag))
             if kind is not None:
                 record.protected_ranges.append(ProtectedRange(0, len(record.text), kind))
             ancestor = ancestor.getparent()
 
         for element in paragraph.iter():
             start, end = position_map.get(element, (0, 0))
-            kind = _PROTECTED_CONTAINERS.get(element.tag)
+            kind = _PROTECTED_CONTAINERS.get(str(element.tag))
             if kind is not None:
                 record.protected_ranges.append(ProtectedRange(start, end, kind))
 
@@ -390,8 +390,8 @@ class _FieldBuilder:
     part_name: str
     start_paragraph: int
     start_run: int | None
-    instruction: list[str] = field(default_factory=list)
-    result: list[str] = field(default_factory=list)
+    instruction: list[str] = field(default_factory=lambda: list[str]())
+    result: list[str] = field(default_factory=lambda: list[str]())
     separated: bool = False
 
 
@@ -1385,10 +1385,10 @@ def zotero_field_json(field: ComplexField) -> dict[str, Any] | None:
     if start < 0:
         return None
     try:
-        value = json.loads(field.instruction[start:])
+        value = cast(object, json.loads(field.instruction[start:]))
     except json.JSONDecodeError:
         return None
-    return value if isinstance(value, dict) else None
+    return cast(dict[str, Any], value) if isinstance(value, dict) else None
 
 
 __all__ = [

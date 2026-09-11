@@ -53,6 +53,8 @@ uv run ruff format --check .
 uv run ruff check .
 uv run pyright
 uv run pytest
+PYTHONPATH=. uv run python scripts/generate_openxml_fixtures.py .artifacts/openxml-fixtures
+dotnet run --project tools/openxml-validator -- .artifacts/openxml-fixtures
 ```
 
 To apply formatting:
@@ -73,6 +75,8 @@ uv build
 
 The project targets Python 3.12, uses Ruff with a 100-character line length, and runs
 Pyright in strict mode over `src` and `tests`. Pytest discovers tests under `tests`.
+The final two commands require .NET 8 and validate deterministic, scrubbed fixtures with
+Microsoft's Open XML SDK as a secondary interoperability check.
 
 ## Change discipline
 

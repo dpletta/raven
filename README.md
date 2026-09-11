@@ -309,6 +309,8 @@ uv run ruff format --check .
 uv run ruff check .
 uv run pyright
 uv run pytest
+PYTHONPATH=. uv run python scripts/generate_openxml_fixtures.py .artifacts/openxml-fixtures
+dotnet run --project tools/openxml-validator -- .artifacts/openxml-fixtures
 uv build
 ```
 

@@ -8,7 +8,7 @@ import json
 import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from lxml import etree
 
@@ -144,8 +144,8 @@ class ComplexField:
 class FieldScan:
     """Fields plus recoverable malformed-field warnings."""
 
-    fields: list[ComplexField] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
+    fields: list[ComplexField] = field(default_factory=list[ComplexField])
+    warnings: list[str] = field(default_factory=list[str])
 
 
 @dataclass(slots=True)
@@ -154,10 +154,10 @@ class _OpenField:
     ordinal: int
     depth: int
     separator: FieldBoundary | None = None
-    instruction_nodes: list[etree._Element] = field(default_factory=list)
-    result_nodes: list[etree._Element] = field(default_factory=list)
-    runs: list[etree._Element] = field(default_factory=list)
-    paragraphs: list[etree._Element] = field(default_factory=list)
+    instruction_nodes: list[etree._Element] = field(default_factory=list[etree._Element])
+    result_nodes: list[etree._Element] = field(default_factory=list[etree._Element])
+    runs: list[etree._Element] = field(default_factory=list[etree._Element])
+    paragraphs: list[etree._Element] = field(default_factory=list[etree._Element])
 
 
 def _append_identity(items: list[etree._Element], value: etree._Element | None) -> None:
@@ -178,7 +178,7 @@ def _citation_id(instruction: str) -> str | None:
         match = re.search(r'"citationID"\s*:\s*"([^"]+)"', instruction)
         return match.group(1) if match else None
     if isinstance(payload, dict):
-        value = payload.get("citationID")
+        value = cast(dict[object, object], payload).get("citationID")
         if isinstance(value, (str, int)):
             return str(value)
     return None
@@ -389,7 +389,11 @@ def _nth_span(text: str, needle: str, occurrence: int) -> tuple[int, int] | None
     if not needle:
         return None
     cursor = 0
-    for _ in range(occurrence):
+    found = text.find(needle, cursor)
+    if found < 0:
+        return None
+    cursor = found + len(needle)
+    for _ in range(1, occurrence):
         found = text.find(needle, cursor)
         if found < 0:
             return None
@@ -598,7 +602,8 @@ def _split_run_and_insert(
     new_runs: Sequence[etree._Element],
 ) -> None:
     run = _ancestor(node, "r")
-    if run is None or run.getparent() is None:
+    parent = run.getparent() if run is not None else None
+    if run is None or parent is None:
         raise RavenError(
             ErrorCode.ANCHOR_NOT_FOUND,
             "The text anchor is not contained in an editable run.",
@@ -611,7 +616,6 @@ def _split_run_and_insert(
             stage="citation.fields.insert",
             remediation="Accept or reject the revision, then retry.",
         )
-    parent = run.getparent()
     if parent.tag != qn("p"):
         raise RavenError(
             ErrorCode.PROTECTED_BOUNDARY,
@@ -790,7 +794,7 @@ def _editable_field(field: ComplexField) -> tuple[etree._Element, int]:
             stage="citation.fields.edit",
         )
     for boundary in (field.begin, field.separator, field.end):
-        if boundary is None or boundary.run is None:
+        if boundary.run is None:
             continue
         unrelated = [
             child

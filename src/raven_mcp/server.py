@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -27,7 +27,7 @@ def create_server(runtime_settings: Settings | None = None) -> MCPServer[Any]:
     zotero = ZoteroClient(configured)
 
     @asynccontextmanager
-    async def lifespan(_: MCPServer[Any]) -> AsyncIterator[None]:
+    async def lifespan(_: MCPServer[Any]) -> AsyncGenerator[None]:
         try:
             yield None
         finally:

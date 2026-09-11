@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    model_config = ConfigDict(extra="forbid")
 
 
 class StoryKind(StrEnum):
@@ -182,7 +182,9 @@ class ParagraphView(StrictModel):
     text: str
     style: str | None = None
     kind: str = "paragraph"
-    protected_ranges: list[tuple[int, int, str]] = Field(default_factory=list)
+    protected_ranges: list[tuple[int, int, str]] = Field(
+        default_factory=lambda: list[tuple[int, int, str]]()
+    )
 
 
 class TransactionPreview(StrictModel):

@@ -89,7 +89,8 @@ def _validate_item_keys(item_keys: Sequence[str]) -> tuple[str, ...]:
 
     unique: list[str] = []
     seen: set[str] = set()
-    for key in item_keys:
+    for item_key in item_keys:
+        key = cast(object, item_key)
         if not isinstance(key, str) or _ITEM_KEY_RE.fullmatch(key) is None:
             raise _invalid_request(
                 f"Invalid Zotero item key {key!r}; keys must be 8 uppercase letters or digits."
@@ -192,9 +193,10 @@ def resolve_get(
 
 def _records_from_payload(payload: object) -> list[tuple[str | None, Mapping[str, Any]]]:
     if isinstance(payload, list):
-        if not all(isinstance(value, Mapping) for value in payload):
+        values = cast(list[object], payload)
+        if not all(isinstance(value, Mapping) for value in values):
             raise TypeError("Zotero returned a list containing a non-object item.")
-        return [(None, cast(Mapping[str, Any], value)) for value in payload]
+        return [(None, cast(Mapping[str, Any], value)) for value in values]
 
     if not isinstance(payload, Mapping):
         raise TypeError("Zotero returned a payload that is not an object or list.")
@@ -203,9 +205,10 @@ def _records_from_payload(payload: object) -> list[tuple[str | None, Mapping[str
     for field in ("items", "results"):
         nested = obj.get(field)
         if isinstance(nested, list):
-            if not all(isinstance(value, Mapping) for value in nested):
+            values = cast(list[object], nested)
+            if not all(isinstance(value, Mapping) for value in values):
                 raise TypeError("Zotero returned a non-object item.")
-            return [(None, cast(Mapping[str, Any], value)) for value in nested]
+            return [(None, cast(Mapping[str, Any], value)) for value in values]
 
     if any(field in obj for field in ("key", "itemKey", "data", "csljson", "cslJSON")):
         return [(None, obj)]
@@ -245,7 +248,7 @@ def _link_href(value: object) -> str | None:
     if isinstance(value, str) and value:
         return value
     if isinstance(value, Mapping):
-        href = value.get("href")
+        href = cast(Mapping[str, object], value).get("href")
         if isinstance(href, str) and href:
             return href
     return None
@@ -266,8 +269,9 @@ def _item_uri(
 
     links = raw.get("links")
     if isinstance(links, Mapping):
+        link_values = cast(Mapping[str, object], links)
         for relation in ("self", "alternate"):
-            href = _link_href(links.get(relation))
+            href = _link_href(link_values.get(relation))
             if href is not None:
                 return href
 
@@ -309,15 +313,17 @@ def _normalize_item(
             break
         if isinstance(candidate, str):
             try:
-                decoded = json.loads(candidate)
+                decoded = cast(object, json.loads(candidate))
             except json.JSONDecodeError:
                 continue
             if isinstance(decoded, Mapping):
                 csl_json = dict(cast(Mapping[str, Any], decoded))
                 break
-            if isinstance(decoded, list) and len(decoded) == 1 and isinstance(decoded[0], Mapping):
-                csl_json = dict(cast(Mapping[str, Any], decoded[0]))
-                break
+            if isinstance(decoded, list):
+                decoded_items = cast(list[object], decoded)
+                if len(decoded_items) == 1 and isinstance(decoded_items[0], Mapping):
+                    csl_json = dict(cast(Mapping[str, Any], decoded_items[0]))
+                    break
 
     return ZoteroItem(
         key=key,
