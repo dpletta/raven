@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Install uv and Python 3.12
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.12.13"
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen --all-groups
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Pyright
+        run: uv run pyright
+
+      - name: Pytest
+        run: uv run pytest
+
+      # Microsoft does not distribute a versioned, cross-platform Open XML SDK
+      # validator CLI. Installing an unpinned third-party wrapper would make CI
+      # non-reproducible. The generated fixtures are instead checked by Raven's
+      # package/semantic validators plus explicit ZIP, XML, relationship, and
+      # content-type tests. Add an SDK validator here if an official CLI ships.
